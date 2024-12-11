@@ -1,0 +1,66 @@
+
+echo "--------------------------------------------------------------------------"
+echo "Uninstalling Visual Studio Code and other stuff from $INSTALLDIR:"
+echo "--------------------------------------------------------------------------"
+echo "Press [1] button to uninstall Visual Studio Code"
+echo "Press [2] button to uninstall MinGWx86_64-8.1.0"
+echo "Press [3] button to uninstall Python"
+echo "Press [4] button to uninstall JDK"
+echo "Press [A] button to uninstall all!"
+read -p "Your choice: " button
+
+clear
+echo -e "\e[33;1m"
+
+if [ "$button" == "1" ]; then
+  echo "------------------------------------"
+  echo "Uninstalling Visual Studio Code..."
+  echo "------------------------------------"
+  rm -rf $VSCHOME
+  exit
+
+elif [ "$button" == "2" ]; then
+  echo "------------------------------------"
+  echo "Uninstalling MinGWx86_64-8.1.0..."
+  echo "------------------------------------"
+  rm -rf $MINGWHOME
+  exit
+
+elif [ "$button" == "3" ]; then
+  echo "------------------------------------"
+  echo "Uninstalling Python3..."
+  echo "------------------------------------"
+  rm -rf $PYTHONHOME
+  exit
+
+elif [ "$button" == "4" ]; then
+  echo "------------------------------------"
+  echo "Uninstalling JDK"
+  echo "------------------------------------"
+  rm -rf $JDKHOME
+  exit
+
+
+elif [ "$button" == "A" ]; then
+  echo "-------------------------------------"
+  echo "Uninstalling VSC, MinGW, JDK, Python"
+  echo "-------------------------------------"
+  rm -rf $MINGWHOME
+  rm -rf $VSCHOME
+  rm -rf $PYTHONHOME
+  rm -rf $JDKHOME
+  rm -f uninstall.sh
+  exit
+
+else
+  echo "-------------------------------------"
+  echo "Uninstallation canceled!"
+  echo "-------------------------------------"
+  read -p "Press any key to continue..."
+  exit
+fi
+
+echo "---------------------------------------"
+echo "Uninstallation process complete"
+echo "---------------------------------------"
+read -p "Press any key to continue..."

@@ -1,0 +1,33 @@
+# For run ssh-agent automatically when you open bash or Git shell.
+
+# Asuming that this is the user .bashcr located in user home dir
+env=~/.ssh/agent.env
+# individual named key is used
+key=~/.ssh/git_id_ed25519
+
+agent_load_env () { test -f "$env" && . "$env" >| /dev/null ; }
+
+agent_start () {
+    (umask 077; ssh-agent >| "$env")
+    . "$env" >| /dev/null ; }
+
+agent_load_env
+
+# agent_run_state: 0=agent running w/ key; 1=agent w/o key; 2=agent not running
+agent_run_state=$(ssh-add -l >| /dev/null 2>&1; echo $?)
+
+if [ ! "$SSH_AUTH_SOCK" ] || [ $agent_run_state = 2 ]; then
+    echo "starting ssh agent..."
+    agent_start
+    echo "adding ssh key..."
+    ssh-add "$key"
+elif [ "$SSH_AUTH_SOCK" ] && [ $agent_run_state = 1 ]; then
+    echo "ssh agent has been runing without key"
+    echo "adding ssh key..."
+    ssh-add "$key"
+else
+    echo "ssh agent is runing"
+fi
+ssh-add -l # for control
+unset env
+unset key

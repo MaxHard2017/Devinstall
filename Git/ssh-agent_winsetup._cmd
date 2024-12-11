@@ -1,0 +1,8 @@
+@echo off
+@echo Activating ssh-agent on Windows as a secvice
+@echo for support ssh connections with git and ets.
+@echo This need to start up it with elevated privileges
+
+start /wait /b cmd /c PowerShell  "Start-Process PowerShell -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "%~dp0run_ssh-agent_winservice.ps1"' -Verb RunAs"
+@del %~dp0run_ssh-agent_winservice.ps1
+@del %0

@@ -1,0 +1,16 @@
+Write-Host "Launching ssh-agent service on your windiws system..."
+
+$isElevated = (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if ( -not $isElevated) {
+    Write-Host " "
+    Write-Host "No admin rights!"
+    Write-Host "Elevate privileges for launching script."
+    Start-Sleep 5
+    exit
+}
+Write-Host "Privileges elevated temporary..."
+# Get-Service -Name ssh-agent | Set-Service -StartupType Manual
+# Start-Service ssh-agent
+Start-Sleep 5
+
+exit
