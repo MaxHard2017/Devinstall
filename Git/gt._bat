@@ -1,22 +1,23 @@
 set gitdir=%~d0%installdir%%githome%%
-echo gitdir=%gitdir%
-
-@echo Temporary set PATH to git executibles like git or gitk
+@echo gitdir = %gitdir%
+@echo.
+echo Temporary set PATH to git executibles like git or gitk
 set PATH=%gitdir%\cmd;%PATH%
-echo PATH = %PATH%
+@echo PATH = %PATH%
 @echo.
 
 rem temporary set HOME environment variable for git-bash so you can make Git store and use
 rem the configuration files: .bashrc etc. in the directory specified in that variable.
-@echo Setting home directory for git-bash...
+
+echo Setting home directory for git-bash...
 set HOME=%~d0%bashhome%
 @echo HOME = %HOME%
 @echo.
 
 rem passing --cd-to-home to git-bash will set the user's home directory as the working directory
 rem (as if Git for Windows was installed).
-@echo Starting git-bash at home...
-@remove <--cd-to-home> option to start it elsewhere
-start "" %gitdir%\git-bash.exe --cd-to-home
+rem remove <--cd-to-home> option to start it elsewhere
 
+@echo starting git-bash at HOME
+start "" %gitdir%\git-bash.exe --cd-to-home
 pause

@@ -122,7 +122,7 @@ path_set() {
             echo ""
             echo -e "  Installation path: \e[35m$INSTALLDIR\e[0m"
             echo ""
-            read -p $'  Cange it or press \e[32m[ENTER]\e[0m to continue:\e[32m ' name
+            read -p $'  Change it or press \e[32m[ENTER]\e[0m to continue:\e[32m ' name
             echo $'\e[0m'
         if [ -z "$name" ]; then
             clear
@@ -193,14 +193,152 @@ option_custom() {
     echo -e "  \e[32mvsc, git, java, maven, mingw, python\e[0m"  
     echo "------------------------------------------------------------------------------"
     path_set
-    git_install
-    vsc_install
-    jdk_install
-    maven_install
-    mingw_install
-    python_install
+
+    local choice21=""
+    local choice22=""
+    local choice23=""
+    local choice24=""
+    local choice25=""
+    local choice26=""
+    while :  
+    do
+        echo ""
+        echo "  Do you want to install GIT?"
+        read -p $'  \e[32my\e[0m - yes, \e[32mn\e[0m - no: ' -n 1  choice21
+        echo ""
+        case "$choice21" in
+            y)
+                git_install
+                echo "  GIT installation finished"
+                break
+                ;;
+            n)
+                echo ""
+                echo "  GIT installation skipped."
+                break
+                ;;
+            *)
+                echo -e "\n\e[33m  Invalid choice.\e[0m Please try again."
+                ;;
+        esac
+    done
+
+    while :  
+    do
+        echo ""
+        echo "  Do you want to install Java 23?"
+        read -p $'  \e[32my\e[0m - yes, \e[32mn\e[0m - no: ' -n 1  choice22
+        echo ""
+        case "$choice22" in
+            y)
+                jdk_install
+                echo "  Java 23 installed."
+                break
+                ;;
+            n)
+                echo ""
+                echo "  Java installation skipped."
+                break
+                ;;
+            *)
+                echo -e "\n\e[33m  Invalid choice.\e[0m Please try again."
+                ;;
+        esac
+    done
+
+    while :  
+    do
+        echo ""
+        echo "  Do you want to install Maven?"
+        read -p $'  \e[32my\e[0m - yes, \e[32mn\e[0m - no: ' -n 1  choice23
+        echo ""
+        case "$choice23" in
+            y)
+                maven_install
+                echo "  Maven installed."
+                break
+                ;;
+            n)
+                echo ""
+                echo "  Maven installation skipped."
+                break
+                ;;
+            *)
+                echo -e "\n\e[33m  Invalid choice.\e[0m Please try again."
+                ;;
+        esac
+    done
+    
+    while :  
+    do
+        echo ""
+        echo "  Do you want to install MinGW?"
+        read -p $'  \e[32my\e[0m - yes, \e[32mn\e[0m - no: ' -n 1  choice24
+        echo ""
+        case "$choice24" in
+            y)
+                mingw_install
+                echo "  MinGW installed."
+                break
+                ;;
+            n)
+                echo ""
+                echo "  MinGW installation skipped."
+                break
+                ;;
+            *)
+                echo -e "\n\e[33m  Invalid choice.\e[0m Please try again."
+                ;;
+        esac
+    done
+
+    while :  
+    do
+        echo ""        
+        echo "  Do you want to install Python?"
+        read -p $'  \e[32my\e[0m - yes, \e[32mn\e[0m - no: ' -n 1  choice25
+        echo ""
+        case "$choice25" in
+            y)
+                python_install
+                echo "  Python installed."
+                break
+                ;;
+            n)
+                echo ""
+                echo "  Python installation skipped."
+                break
+                ;;
+            *)
+                echo -e "\n\e[33m  Invalid choice.\e[0m Please try again."
+                ;;
+        esac
+    done
+
+    while :  
+    do
+        echo ""
+        echo "  Do you want to install Visual Sourse Code?"
+        read -p $'  \e[32my\e[0m - yes, \e[32mn\e[0m - no: ' -n 1  choice26
+        echo ""
+        case "$choice26" in
+            y)
+                vsc_install
+                vscode_startup_scripts
+                break
+                ;;
+            n)
+                echo ""
+                echo "  VSC installation skipped."
+                break
+                ;;
+            *)
+                echo -e "\n\e[33m  Invalid choice.\e[0m Please try again."
+                ;;
+        esac
+    done
+    
     make_uninstall_bat
-    vscode_startup_scripts
     toolchain_test
 }
 
@@ -322,7 +460,8 @@ vsc_install() {
     # $SRC_7ZIP/7za.exe x $SRC_VSC/*.zip -o${INSTALLDIR:2}/$VSCHOME
     #-# testing bins
     pushd "$INSTALLDIR"
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_VSC/test/*.zip -o$VSCHOME
+    #$SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_VSC/test/*.zip -o$VSCHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_VSC/*.zip -o$VSCHOME
     popd
 
     #-old
@@ -409,7 +548,8 @@ mingw_install() {
     
     #-# testing bins
     pushd "$INSTALLDIR"
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_C/test/*.zip -o$MINGWHOME
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_C/test/*.zip -o$MINGWHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_C/*.7z -o$MINGWHOME
     popd
     #-old
     # mkdir -p "$INSTALLDIR/$MINGWHOME/mingw64/bin"
@@ -427,7 +567,6 @@ python_install() {
     echo ""
     echo -e "Installing \e[32mPython\e[0m to directory: \e[37;1m$INSTALLDIR/$PYTHONHOME\e[0m..."
     echo "------------------------------------------------------------------------------"
-    
     mkdir -p "$INSTALLDIR/$PYTHONHOME"
     
     #-#
@@ -437,7 +576,11 @@ python_install() {
     # $SRC_7ZIP/7za.exe x $SRC_PYTHON/* -o${INSTALLDIR:2}/$PYTHONHOME
         
     # testing bins
-    echo "echo python - ok " > "$INSTALLDIR/$PYTHONHOME/python123"
+    pushd "$INSTALLDIR"
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_PYTHON/test/*.zip -o$PYTHONHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_PYTHON/*.zip -o$PYTHONHOME
+    popd
+    # echo "echo python - ok " > "$INSTALLDIR/$PYTHONHOME/python123"
     #-#
 
     echo ""
@@ -463,7 +606,8 @@ jdk_install() {
     # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path
     # $SRC_7ZIP/7za.exe x $SRC_JDK/* -o${INSTALLDIR:2}/$JDKHOME
     pushd "$INSTALLDIR"
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_JDK/test/*.zip -o$JDKHOME
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_JDK/test/*.zip -o$JDKHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_JDK/*.zip -o$JDKHOME
     popd
     
     # testing bins
@@ -496,7 +640,8 @@ maven_install() {
     
     # testing bins
     pushd "$INSTALLDIR"
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_MAVEN/test/*.zip -o$MAVENHOME
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_MAVEN/test/*.zip -o$MAVENHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_MAVEN/*.zip -o$MAVENHOME
     popd
 
     # echo "echo mvn - ok " > "$INSTALLDIR/$MAVENHOME/$MAVEN/bin/mvn"
@@ -534,27 +679,24 @@ git_install() {
         pushd "$INSTALLDIR"
         echo "PWD"
         pwd
-        $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/test/*.zip -o$GITHOME
-        
+        # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/test/*.zip -o$GITHOME # for test
+        $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/*.exe -o$GITHOME
+        echo postinstall git...
+        # execute post-install.bat script through git-bash for compleating installation
+        # post-install.bat is generating after installation and self deleting after exeqution
+        # pwd - INSTALLDIR - so call it reletive 
+        # $GITHOME/git-bash.exe --no-needs-console --hide --no-cd --command="$GITHOME/post-install.bat"
+        echo $GITHOME/post-install.bat
+        $GITHOME/post-install.bat
         echo "popd:"
         popd
 
         echo ""
         echo $INSTALLDIR/$GITHOME
         ls -Al $INSTALLDIR/$GITHOME
-
-        echo postinstall git...
         #-#       
-        # execute post-install.bat script through git-bash for compleating installation
-        # post-install.bat is generating after installation and self deleting after exeqution
-        # # $INSTALLDIR/$GITHOME/git-bash.exe --no-needs-console --hide --no-cd --command="$INSTALLDIR/$GITHOME/post-install.bat"
-        $INSTALLDIR/$GITHOME/post-install.bat
-    fi
 
-    # # testing bins
-    # mkdir -p "$INSTALLDIR/$GITHOME/cmd"
-    # echo "echo git - ok " > "$INSTALLDIR/$GITHOME/cmd/git"
-    # #
+    fi
 
     local input_str=""
     local choise2=""
@@ -603,7 +745,17 @@ git_install() {
                 echo -e "\n\e[33m  Invalid choice.\e[0m Please try again."
                 ;;
         esac
+        
     done
+
+    # HOME_WIN variable for storing path to HOME without drive letter
+    # for making reletive paths in win style
+    # change slashes to backslashes for windows style path
+    HOME_WIN=${HOME//['/']/\\}
+    # cut first 2 syumbols (drive letter) from HOME variable
+    HOME_WIN=${HOME_WIN:2}
+
+
 
     #ENVIRONMENT_VARS_WIN+="set GITDIR=%~dp0..\..\\$GITHOME"
     #ENVIRONMENT_VARS_WIN+=$'\n'
@@ -672,12 +824,15 @@ git_install() {
 
                 # execute bat script through git-bash 
                 # $INSTALLDIR/$GITHOME/git-bash.exe --no-needs-console --hide --no-cd --command="$HOME/ssh-agent_winsetup.cmd"
-                
                 $HOME/ssh-agent_winsetup.cmd
                 
                 # for signing comits by SSH key
                 "$INSTALLDIR/$GITHOME"/cmd/git config --global gpg.format ssh
                 "$INSTALLDIR/$GITHOME"/cmd/git config --global user.signingkey $HOME/.ssh/git_id_ed25519.pub
+
+                # launching ssh on git-bash
+                cp "$SRC_GIT/._bashrc" "$HOME/.bashrc"
+                cp "$SRC_GIT/._bash_profile" "$HOME/.bash_profile"
 
                 ENVIRONMENT_VARS_WIN+="echo Starting ssh agent... "
                 ENVIRONMENT_VARS_WIN+=$'\n'
@@ -703,17 +858,9 @@ git_install() {
         esac
     done
 
-    # for launching on win and nix -bashrc and .bat
+    # for launching git on windiws - gt.bat
     #_#
-    check_var
-    cp "$SRC_GIT/._bashrc" "$HOME/.bashrc"
-    cp "$SRC_GIT/._bash_profile" "$HOME/.bash_profile"
-    # HOME_WIN variable for storing path to HOME without drive letter
-    # for making reletive paths in win style
-    # change slashes to backslashes for windows style path
-    HOME_WIN=${HOME//['/']/\\}
-    # cut first 2 syumbols (drive letter) from HOME variable
-    HOME_WIN=${HOME_WIN:2}
+    # check_var
     # same to INSTALLDIR_WIN and INSTALLDIR
     INSTALLDIR_WIN=${INSTALLDIR//['/']/\\}
     INSTALLDIR_WIN=${INSTALLDIR_WIN:2}
@@ -770,7 +917,7 @@ vscode_startup_scripts() {
     fi
 
     echo '@ECHO OFF' > "$INSTALLDIR/$VSCHOME/bin/code.cmd"
-
+    echo "rem For SSH check if components installed in Windows\System32\OpenSSH" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
     # INSTALLDIR:~2 - INSTALLDIR variable string without 2 first letters, i.e. without drive letters (C: - for instance)
     # It gives us the opportunity to set the correct drive letter in PATH variable, even if we will use installation on a USB drive with an assigned random drive letter
     # WRITE_PATH uses extra "%" for correct writing PATH to code.cmd - %~d0% but not its value (c: - for instance)
@@ -799,7 +946,6 @@ vscode_startup_scripts() {
     echo ===
     echo code
     cat "$INSTALLDIR/$VSCHOME/bin/code"
-    read -s -p $'  press \e[32m[ENTER]\e[0m to continue...\n'
 }
 
 toolchain_test() {
@@ -813,12 +959,13 @@ toolchain_test() {
     else
         pushd "$INSTALLDIR/$GITHOME/cmd" #"$@" > /dev/null
     fi
+
     echo "new PWD"
     pwd
-
     JAVA_HOME="./../../$JDKHOME/$JDK"
     echo -e "Current toolchain path: $DEV_PATH_LNX\n"
-    PATH="$DEV_PATH_LNX$PATH"
+    temp_path=$PATH
+    PATH="$DEV_PATH_LNX"
 
     #for check
     echo "checking PATH = $PATH"
@@ -842,16 +989,17 @@ toolchain_test() {
     echo "Python test"
     python --version
     echo ""
-    echo ""
     echo "java test"
     java --version
     echo ""
     echo "maven test"
+    echo "JAVA_HOME -- $JAVA_HOME"
     mvn --version
     echo ""
     echo "git test"
     git --version
     # returning to the working folder
+    PATH=$temp_path
     popd "$@" > /dev/null
     echo ""
     echo -e "  \e[32mInstasalation finished!\e[0m"
@@ -868,6 +1016,7 @@ make_uninstall_bat() {
     echo "JDKHOME=$JDKHOME" >> "$INSTALLDIR/uninstall.sh"
     echo "INSTALLDIR=$INSTALLDIR" >> $INSTALLDIR/uninstall.sh
     cat uninstall._sh >> $INSTALLDIR/uninstall.sh
+    echo ""
     echo "  Uninstall script complete!"
     # read -s -p $'  press \e[32m[ENTER]\e[0m to continue'
 }
@@ -926,6 +1075,14 @@ custom_menu() {
 main_menu() {    
     local choice023=""
     local invalid023msg=""
+    
+    #-#
+    pwd
+    cd $SRC_PATH
+    echo "PWD:"
+    pwd
+    #-#
+
     while :
     do
         clear
@@ -936,10 +1093,7 @@ main_menu() {
         echo "------------------------------------------------------------------------------"
         echo ""
         
-        pwd
-        cd $SRC_PATH
-        echo "PWD:"
-        pwd
+        
 
         echo -e "  Installing to: \e[37;1m$INSTALLDIR\e[0m"
         echo ""
@@ -984,7 +1138,7 @@ main_menu() {
 
 # ========== Main ===========
 #-#
-check_var
+# check_var
 #-#
 
 main_menu
