@@ -1,12 +1,12 @@
 #!/bin/bash
-clear
 # ===== Global =====
 # Destination folders for installation
-
 # app home folsers
 HOME="/f/testhome"   # /path/to/installation/directory/ for all programms
 # INSTALLDIR must be on the same disc as HOME
 INSTALLDIR="/f/testdevinstall"   # /path/to/installation/directory/ for all programms
+# making absolet win like path for 7z (as it could only work with reletive path and can not underctend /c/...)
+ABS_INSTALL=${INSTALLDIR:1:1}:${INSTALLDIR:2}
 # HOME="$HOME/testhome"   # /path/to/installation/directory/ for all programms
 # INSTALLDIR="$HOME/testdevinstall"   # /path/to/installation/directory/ for all programms
 VSCHOME="VSC"
@@ -57,7 +57,7 @@ ENVIRONMENT_VARS_LNX=""        # collects data for environment variables needed 
 
 # ========== Annatation ==========
 annatation() {
-    clear
+    # clear
     echo ""
     echo -e "  \e[37;1mContent:\e[0m"
     echo ""
@@ -135,6 +135,8 @@ path_set() {
  
         fi
     done
+    # making absolet path for 7z (as it could only work with reletive path and can not underctend /c/...)
+    ABS_INSTALL=${INSTALLDIR:1:1}:${INSTALLDIR:2}
 }
 
 # ========== Instalation options ==========
@@ -459,11 +461,10 @@ vsc_install() {
     # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path
     # $SRC_7ZIP/7za.exe x $SRC_VSC/*.zip -o${INSTALLDIR:2}/$VSCHOME
     #-# testing bins
-    pushd "$INSTALLDIR"
+    #pushd "$INSTALLDIR"
     #$SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_VSC/test/*.zip -o$VSCHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_VSC/*.zip -o$VSCHOME
-    popd
-
+    $SRC_7ZIP/7za.exe x $SRC_VSC/*.zip -o$ABS_INSTALL/$VSCHOME
+    #popd
     #-old
     # mkdir -p "$INSTALLDIR/$VSCHOME/bin"
     # cp "$SRC_VSC/code_test" "$INSTALLDIR/$VSCHOME/bin/code"
@@ -547,10 +548,10 @@ mingw_install() {
     # $SRC_7ZIP/7za.exe x $SRC_C/* -o${INSTALLDIR:2}/$MINGWHOME
     
     #-# testing bins
-    pushd "$INSTALLDIR"
+    #pushd "$INSTALLDIR"
     # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_C/test/*.zip -o$MINGWHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_C/*.7z -o$MINGWHOME
-    popd
+    $SRC_7ZIP/7za.exe x $SRC_C/*.7z -o$ABS_INSTALL/$MINGWHOME
+    #popd
     #-old
     # mkdir -p "$INSTALLDIR/$MINGWHOME/mingw64/bin"
     # echo "echo MinGW - ok " > "$INSTALLDIR/$MINGWHOME/mingw64/bin/gcc"
@@ -576,10 +577,10 @@ python_install() {
     # $SRC_7ZIP/7za.exe x $SRC_PYTHON/* -o${INSTALLDIR:2}/$PYTHONHOME
         
     # testing bins
-    pushd "$INSTALLDIR"
+    #pushd "$INSTALLDIR"
     # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_PYTHON/test/*.zip -o$PYTHONHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_PYTHON/*.zip -o$PYTHONHOME
-    popd
+    $SRC_7ZIP/7za.exe x $SRC_PYTHON/*.zip -o$ABS_INSTALL/$PYTHONHOME
+    #popd
     # echo "echo python - ok " > "$INSTALLDIR/$PYTHONHOME/python123"
     #-#
 
@@ -605,10 +606,10 @@ jdk_install() {
     # # extracting into the current drive making /c... in the root of the /c drive
     # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path
     # $SRC_7ZIP/7za.exe x $SRC_JDK/* -o${INSTALLDIR:2}/$JDKHOME
-    pushd "$INSTALLDIR"
+    #pushd "$INSTALLDIR"
     # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_JDK/test/*.zip -o$JDKHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_JDK/*.zip -o$JDKHOME
-    popd
+    $SRC_7ZIP/7za.exe x $SRC_JDK/*.zip -o$ABS_INSTALL/$JDKHOME
+    #popd
     
     # testing bins
     # echo "echo java - ok " > "$INSTALLDIR/$JDKHOME/$JDK/bin/java"
@@ -639,10 +640,10 @@ maven_install() {
     # $SRC_7ZIP/7za.exe x $SRC_MAVEN/*.zip -o${INSTALLDIR:2}/$MAVENHOME
     
     # testing bins
-    pushd "$INSTALLDIR"
+    #pushd "$INSTALLDIR"
     # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_MAVEN/test/*.zip -o$MAVENHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_MAVEN/*.zip -o$MAVENHOME
-    popd
+    $SRC_7ZIP/7za.exe x $SRC_MAVEN/*.zip -o$ABS_INSTALL/$MAVENHOME
+    #popd
 
     # echo "echo mvn - ok " > "$INSTALLDIR/$MAVENHOME/$MAVEN/bin/mvn"
     #-#
@@ -675,36 +676,37 @@ git_install() {
         # $SRC_7ZIP/7za.exe x $SRC_GIT/*.exe -o${INSTALLDIR:2}/$GITHOME
         
         # testing bins
-        echo "pushd:"
+        # echo "pushd:"
         pushd "$INSTALLDIR"
-        echo "PWD"
-        pwd
-        # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/test/*.zip -o$GITHOME # for test
+        # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/test/*.zip -o$GITHOME # for test\
+        # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/*.exe -o$ABS_INSTALL/$GITHOME
         $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/*.exe -o$GITHOME
+        # $SRC_7ZIP/7za.exe x $SRC_GIT/*.exe -o$ABS_INSTALL/$GITHOME
         echo postinstall git...
         # execute post-install.bat script through git-bash for compleating installation
         # post-install.bat is generating after installation and self deleting after exeqution
         # pwd - INSTALLDIR - so call it reletive 
         # $GITHOME/git-bash.exe --no-needs-console --hide --no-cd --command="$GITHOME/post-install.bat"
-        echo $GITHOME/post-install.bat
-        $GITHOME/post-install.bat
-        echo "popd:"
+        "$GITHOME"/post-install.bat
         popd
 
-        echo ""
         echo $INSTALLDIR/$GITHOME
         ls -Al $INSTALLDIR/$GITHOME
         #-#       
-
     fi
 
     local input_str=""
     local choise2=""
-    if [[ !$INSTALL_QUICK == "y" ]]; then
+
+    echo INSTALL_QUICK=$INSTALL_QUICK
+
+    if [[ $INSTALL_QUICK == "n" ]]; then
         echo "------------------------------------------------------------------------------"
         echo "  You can set new HOME environment variable tempory for git-bash "
         echo "  (It would be for the current session only)"
-        echo "  Git-bash will track it as it\`s new HOME \"~/\" for storing configuration files."
+        echo "  Git-bash will track it as it\`s new HOME \"~/\" for storing configuration files"
+        echo "  Syet HOME directory on the same disc as the main unstallation: $INSTALLDIR"
+        echo "  or change installdrive in HOME\gt.bat manualy"
         echo ""
     fi
 
@@ -712,9 +714,8 @@ git_install() {
     do
         # echo -e "  git-bash HOME variable = \e[37;1m$HOME\e[0m"
         if [[ $INSTALL_QUICK == "y" ]]
-            then choise2="n"
+            then choise2="n"./install.sh
         else    
-            echo -e "  HOME directory must be on the same disc as $INSTALLDIR"
             echo -e "  Change HOME variable = \e[35m$HOME\e[0m?"
             #echo "  Do you want to change it?"
             read -p $'  \e[32my\e[0m - change, \e[32mn\e[0m - do not change, \e[32mi\e[0m - cahge to INSTALLDIR: ' -n 1  choise2
@@ -803,21 +804,26 @@ git_install() {
             echo -e "  Do you want to sep up \e[32mSSH\e[0m?"
             read -p $'  \e[32my\e[0m - yes, \e[32mn\e[0m - no: ' -n 1  choise3
         fi
-
         case "$choise3" in
             y)
                 #Setting ssh agent for git-bash
+                
                 echo ""
                 mkdir -p "$HOME/.ssh"
+
+                
                 # generate ssh key with SPECIAL name adding 'git_' prefix
-                ssh-keygen -t ed25519 -C $user_email -f "$HOME/.ssh/git_id_ed25519"
+                pushd "$HOME/.ssh"
+                echo "installing ssh key in $(pwd)/git_id_ed25519"
+                ssh-keygen -t ed25519 -C $user_email -f "git_id_ed25519"
                 echo ""               
                 echo "launching ssh agent..."
                 eval "$(ssh-agent -s)"
                 echo "adding ssh key to agent..."
                 # key mane should be definded and also in .bashrc file
-                ssh-add "$HOME/.ssh/git_id_ed25519"
-
+                ssh-add "git_id_ed25519"
+                popd    
+                
                 #Setting ssh agent for windows
                 cp "$SRC_GIT/ssh-agent_winsetup._cmd" "$HOME/ssh-agent_winsetup.cmd"
                 cp "$SRC_GIT/run_ssh-agent_winservice._ps1" "$HOME/run_ssh-agent_winservice.ps1"
@@ -864,12 +870,13 @@ git_install() {
     # same to INSTALLDIR_WIN and INSTALLDIR
     INSTALLDIR_WIN=${INSTALLDIR//['/']/\\}
     INSTALLDIR_WIN=${INSTALLDIR_WIN:2}
-    touch $HOME/gt.bat # launch git with new HOME
+    #touch $HOME/gt.bat # launch git with new HOME
     echo "@echo off" > $HOME/gt.bat
     echo "set installdir=$INSTALLDIR_WIN" >> $HOME/gt.bat
     echo "set bashhome=$HOME_WIN" >> $HOME/gt.bat
     echo "set githome=\\$GITHOME" >> $HOME/gt.bat
     cat "$SRC_GIT/gt._bat" >> $HOME/gt.bat
+    chmod 777 $HOME/gt.bat
 }
 
 
@@ -1085,7 +1092,7 @@ main_menu() {
 
     while :
     do
-        clear
+        # clear
         echo "------------------------------------------------------------------------------"
         echo " VS Code portable installation enables all data created and maintained by"
         echo " the app to live near itself, as well as other portable apps, so they coud be"

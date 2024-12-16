@@ -1,4 +1,5 @@
-set gitdir=%~d0%installdir%%githome%%
+set installdrive=%~d0%
+set gitdir=%installdrive%%installdir%%githome%
 @echo gitdir = %gitdir%
 @echo.
 echo Temporary set PATH to git executibles like git or gitk
