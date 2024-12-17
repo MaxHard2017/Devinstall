@@ -9,6 +9,7 @@ if ( -not $isElevated) {
     exit
 }
 Write-Host "Privileges elevated temporary..."
+Write-Host "Setting windows service ssh-agent with manual start..."
 Get-Service -Name ssh-agent | Set-Service -StartupType Manual
 Start-Service ssh-agent
 Start-Sleep 3

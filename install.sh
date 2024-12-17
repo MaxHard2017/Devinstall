@@ -2,13 +2,15 @@
 # ===== Global =====
 # Destination folders for installation
 # app home folsers
-HOME="/f/testhome"   # /path/to/installation/directory/ for all programms
-# INSTALLDIR must be on the same disc as HOME
-INSTALLDIR="/f/testdevinstall"   # /path/to/installation/directory/ for all programms
+# INSTALLDIR better be on the same disc as HOME
 # making absolet win like path for 7z (as it could only work with reletive path and can not underctend /c/...)
-ABS_INSTALL=${INSTALLDIR:1:1}:${INSTALLDIR:2}
-# HOME="$HOME/testhome"   # /path/to/installation/directory/ for all programms
-# INSTALLDIR="$HOME/testdevinstall"   # /path/to/installation/directory/ for all programms
+# ABS_INSTALL=${INSTALLDIR:1:1}:${INSTALLDIR:2}
+HOME="$HOME/home"   # /path/to/installation/directory/ for all programms
+INSTALLDIR="$HOME/devtools"   # /path/to/installation/directory/ for all programms
+# for test
+HOME="/f/testhome" 
+INSTALLDIR="/f/testdevinstall"   # /path/to/installation/directory/ for all programms
+
 VSCHOME="VSC"
 MINGWHOME="MinGWx86_64-8.1.0"
 PYTHONHOME="Python"
@@ -36,7 +38,11 @@ INSTALL_QUICK="n" # y - for quick install with default settings/locations n - fo
 # SRC_GITINIT="$SRC_PATH/git_conf.txt"
 
 # source installation directory contains install.sh and source folders
-SRC_PATH="$(dirname "$(realpath "$0")")" # resolve path to the curent running file e.g. install.sh
+#SRC_PATH="$(dirname "$(realpath "$0")")" # resolve path to the curent running file e.g. install.sh
+#PP= cygpath -u "$(dirname "$(realpath "$0")")"
+
+# install.sh should be in installation directory, finding the path to it
+SRC_PATH="$(cd "$(dirname $0)"; pwd)"
 SRC_DOTNET="dotNet"
 SRC_C="MinGW_GCC"
 SRC_PYTHON="Python"
@@ -57,7 +63,7 @@ ENVIRONMENT_VARS_LNX=""        # collects data for environment variables needed 
 
 # ========== Annatation ==========
 annatation() {
-    # clear
+    clear
     echo ""
     echo -e "  \e[37;1mContent:\e[0m"
     echo ""
@@ -170,7 +176,6 @@ option_full() {
                 maven_install
                 mingw_install
                 python_install
-                make_uninstall_bat
                 vscode_startup_scripts
                 toolchain_test
                 exit 0
@@ -216,7 +221,7 @@ option_custom() {
                 ;;
             n)
                 echo ""
-                echo "  GIT installation skipped."
+                echo "  GIT installation skipped!"
                 break
                 ;;
             *)
@@ -234,7 +239,7 @@ option_custom() {
         case "$choice22" in
             y)
                 jdk_install
-                echo "  Java 23 installed."
+                echo "  Java 23 installed!"
                 break
                 ;;
             n)
@@ -257,7 +262,7 @@ option_custom() {
         case "$choice23" in
             y)
                 maven_install
-                echo "  Maven installed."
+                echo "  Maven installed!"
                 break
                 ;;
             n)
@@ -280,7 +285,7 @@ option_custom() {
         case "$choice24" in
             y)
                 mingw_install
-                echo "  MinGW installed."
+                echo "  MinGW installed!"
                 break
                 ;;
             n)
@@ -303,7 +308,7 @@ option_custom() {
         case "$choice25" in
             y)
                 python_install
-                echo "  Python installed."
+                echo "  Python installed!"
                 break
                 ;;
             n)
@@ -326,7 +331,9 @@ option_custom() {
         case "$choice26" in
             y)
                 vsc_install
+                echo "  VSC installed!"
                 vscode_startup_scripts
+
                 break
                 ;;
             n)
@@ -340,7 +347,6 @@ option_custom() {
         esac
     done
     
-    make_uninstall_bat
     toolchain_test
 }
 
@@ -456,15 +462,13 @@ vsc_install() {
     mkdir -p $INSTALLDIR/$VSCHOME/data/tmp
     
     #-#
-    # # 7z do not change drive and do not take in account drive in absolute path
-    # # extracting into the current drive making /c/... in the root of the /c drive
-    # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path
-    # $SRC_7ZIP/7za.exe x $SRC_VSC/*.zip -o${INSTALLDIR:2}/$VSCHOME
-    #-# testing bins
-    #pushd "$INSTALLDIR"
-    #$SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_VSC/test/*.zip -o$VSCHOME # for test
-    $SRC_7ZIP/7za.exe x $SRC_VSC/*.zip -o$ABS_INSTALL/$VSCHOME
-    #popd
+    pushd "$INSTALLDIR" "$@" > /dev/null
+    # 7z do not use absolet path in nix style and need win style drive letter like c:
+    # ${string:1:1} takes the second one letter 
+    # ${string:2} takes the string from third letter to the end of the string
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/test/*.zip -o$VSCHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/*.zip -o$VSCHOME
+    popd "$@" > /dev/null
     #-old
     # mkdir -p "$INSTALLDIR/$VSCHOME/bin"
     # cp "$SRC_VSC/code_test" "$INSTALLDIR/$VSCHOME/bin/code"
@@ -542,16 +546,11 @@ mingw_install() {
     echo "------------------------------------------------------------------------------"
     mkdir -p $INSTALLDIR/$MINGWHOME
 
-    # # 7z do not change drive and do not take in account drive in absolute path
-    # # extracting into the current drive making /c/... in the root of the /c drive
-    # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path
-    # $SRC_7ZIP/7za.exe x $SRC_C/* -o${INSTALLDIR:2}/$MINGWHOME
-    
-    #-# testing bins
-    #pushd "$INSTALLDIR"
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_C/test/*.zip -o$MINGWHOME # for test
-    $SRC_7ZIP/7za.exe x $SRC_C/*.7z -o$ABS_INSTALL/$MINGWHOME
-    #popd
+    pushd "$INSTALLDIR" "$@" > /dev/null
+    # 7z do not use absolet path in nix style and need win style drive letter like c:
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_C/test/*.zip -o$MINGWHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_C/*.7z -o$MINGWHOME
+    popd "$@" > /dev/null
     #-old
     # mkdir -p "$INSTALLDIR/$MINGWHOME/mingw64/bin"
     # echo "echo MinGW - ok " > "$INSTALLDIR/$MINGWHOME/mingw64/bin/gcc"
@@ -571,16 +570,11 @@ python_install() {
     mkdir -p "$INSTALLDIR/$PYTHONHOME"
     
     #-#
-    # # 7z do not change drive and do not take in account drive in absolute path
-    # # extracting into the current drive making /c/... in the root of the /c drive
-    # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path
-    # $SRC_7ZIP/7za.exe x $SRC_PYTHON/* -o${INSTALLDIR:2}/$PYTHONHOME
-        
-    # testing bins
-    #pushd "$INSTALLDIR"
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_PYTHON/test/*.zip -o$PYTHONHOME # for test
-    $SRC_7ZIP/7za.exe x $SRC_PYTHON/*.zip -o$ABS_INSTALL/$PYTHONHOME
-    #popd
+    pushd "$INSTALLDIR" "$@" > /dev/null
+    # 7z do not use absolet path in nix style and need win style drive letter like c:
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_PYTHON/test/*.zip -o$PYTHONHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_PYTHON/*.zip -o$PYTHONHOME
+    popd "$@" > /dev/null
     # echo "echo python - ok " > "$INSTALLDIR/$PYTHONHOME/python123"
     #-#
 
@@ -602,17 +596,11 @@ jdk_install() {
     
     mkdir -p "$INSTALLDIR/$JDKHOME"
     #-#
-    # # 7z do not change drive and do not take in account drive in absolute path
-    # # extracting into the current drive making /c... in the root of the /c drive
-    # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path
-    # $SRC_7ZIP/7za.exe x $SRC_JDK/* -o${INSTALLDIR:2}/$JDKHOME
-    #pushd "$INSTALLDIR"
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_JDK/test/*.zip -o$JDKHOME # for test
-    $SRC_7ZIP/7za.exe x $SRC_JDK/*.zip -o$ABS_INSTALL/$JDKHOME
-    #popd
-    
-    # testing bins
-    # echo "echo java - ok " > "$INSTALLDIR/$JDKHOME/$JDK/bin/java"
+    pushd "$INSTALLDIR" "$@" > /dev/null
+    # 7z do not use absolet path in nix style and need win style drive letter like c:
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_JDK/test/*.zip -o$JDKHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_JDK/*.zip -o$JDKHOME
+    popd "$@" > /dev/null
     #-#
 
     ENVIRONMENT_VARS_WIN+="set JAVA_HOME=%~dp0..\..\\$JDKHOME\\$JDK"
@@ -634,18 +622,11 @@ maven_install() {
     
     mkdir -p "$INSTALLDIR/$MAVENHOME"
     #-#
-    # # 7z do not change drive and do not take in account drive in absolute path
-    # # extracting into the current drive making /c/... in the root of the /c drive
-    # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path    
-    # $SRC_7ZIP/7za.exe x $SRC_MAVEN/*.zip -o${INSTALLDIR:2}/$MAVENHOME
-    
-    # testing bins
-    #pushd "$INSTALLDIR"
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_MAVEN/test/*.zip -o$MAVENHOME # for test
-    $SRC_7ZIP/7za.exe x $SRC_MAVEN/*.zip -o$ABS_INSTALL/$MAVENHOME
-    #popd
-
-    # echo "echo mvn - ok " > "$INSTALLDIR/$MAVENHOME/$MAVEN/bin/mvn"
+    pushd "$INSTALLDIR" "$@" > /dev/null
+    # 7z do not use absolet path in nix style and need win style drive letter like c:
+    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_MAVEN/test/*.zip -o$MAVENHOME # for test
+    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_MAVEN/*.zip -o$MAVENHOME
+    popd "$@" > /dev/null
     #-#
 
     DEV_PATH_WIN+="%~dp0..\..\\$MAVENHOME\\$MAVEN\bin;"
@@ -670,42 +651,30 @@ git_install() {
     if [ $(ls -A  $INSTALLDIR/$GITHOME | wc -l) -eq 0 ]; then
         
         #-#
-        # # 7z do not change drive and do not take in account drive in absolute path
-        # # extracting into the current drive making /c/... in the root of the /c drive
-        # # ${INSTALLDIR:2} -for deleting first 2 letters ni the path
-        # $SRC_7ZIP/7za.exe x $SRC_GIT/*.exe -o${INSTALLDIR:2}/$GITHOME
+        # 7z do not use absolet path in nix style and need win style drive letter like c:
         
-        # testing bins
-        # echo "pushd:"
-        pushd "$INSTALLDIR"
-        # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/test/*.zip -o$GITHOME # for test\
-        # $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/*.exe -o$ABS_INSTALL/$GITHOME
-        $SRC_PATH/$SRC_7ZIP/7za.exe x $SRC_PATH/$SRC_GIT/*.exe -o$GITHOME
-        # $SRC_7ZIP/7za.exe x $SRC_GIT/*.exe -o$ABS_INSTALL/$GITHOME
+        pushd "$INSTALLDIR" "$@" > /dev/null
+check_var
+
+        # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/test/*.zip -o$GITHOME # for test
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/*.exe -o$GITHOME
         echo postinstall git...
-        # execute post-install.bat script through git-bash for compleating installation
         # post-install.bat is generating after installation and self deleting after exeqution
         # pwd - INSTALLDIR - so call it reletive 
-        # $GITHOME/git-bash.exe --no-needs-console --hide --no-cd --command="$GITHOME/post-install.bat"
         "$GITHOME"/post-install.bat
-        popd
-
-        echo $INSTALLDIR/$GITHOME
-        ls -Al $INSTALLDIR/$GITHOME
+        popd "$@" > /dev/null
         #-#       
     fi
 
     local input_str=""
     local choise2=""
 
-    echo INSTALL_QUICK=$INSTALL_QUICK
-
     if [[ $INSTALL_QUICK == "n" ]]; then
         echo "------------------------------------------------------------------------------"
         echo "  You can set new HOME environment variable tempory for git-bash "
         echo "  (It would be for the current session only)"
         echo "  Git-bash will track it as it\`s new HOME \"~/\" for storing configuration files"
-        echo "  Syet HOME directory on the same disc as the main unstallation: $INSTALLDIR"
+        echo "  Set HOME directory on the same disc as the main unstallation: $INSTALLDIR"
         echo "  or change installdrive in HOME\gt.bat manualy"
         echo ""
     fi
@@ -714,7 +683,7 @@ git_install() {
     do
         # echo -e "  git-bash HOME variable = \e[37;1m$HOME\e[0m"
         if [[ $INSTALL_QUICK == "y" ]]
-            then choise2="n"./install.sh
+            then choise2="n"
         else    
             echo -e "  Change HOME variable = \e[35m$HOME\e[0m?"
             #echo "  Do you want to change it?"
@@ -813,7 +782,7 @@ git_install() {
 
                 
                 # generate ssh key with SPECIAL name adding 'git_' prefix
-                pushd "$HOME/.ssh"
+                pushd "$HOME/.ssh" "$@" > /dev/null
                 echo "installing ssh key in $(pwd)/git_id_ed25519"
                 ssh-keygen -t ed25519 -C $user_email -f "git_id_ed25519"
                 echo ""               
@@ -822,7 +791,7 @@ git_install() {
                 echo "adding ssh key to agent..."
                 # key mane should be definded and also in .bashrc file
                 ssh-add "git_id_ed25519"
-                popd    
+                popd "$@" > /dev/null
                 
                 #Setting ssh agent for windows
                 cp "$SRC_GIT/ssh-agent_winsetup._cmd" "$HOME/ssh-agent_winsetup.cmd"
@@ -879,14 +848,12 @@ git_install() {
     chmod 777 $HOME/gt.bat
 }
 
-
 # ========== Extensions for VSC ===========
 
 # Material icons VSC extension installation
 material_icon_extension () {
     echo material_icon_extension - ok
     echo ""
-    echo "------------------------------------------------------------------------------"
     # "$INSTALLDIR/$VSCHOME/bin/code" --install-extension pkief.material-icon-theme
 }
 
@@ -894,7 +861,6 @@ material_icon_extension () {
 c_extension() {
     echo "c_extension - Ok"
     echo ""
-    echo "------------------------------------------------------------------------------"
     # echo "Installing C/C++ ms-vscode.cpptools extension for VSC..."
     # "$INSTALLDIR/$VSCHOME/bin/code" --install-extension ms-vscode.cpptools
 }
@@ -903,7 +869,6 @@ c_extension() {
 py_extension() {
     echo "py_extension - Ok"
     echo ""
-    echo "------------------------------------------------------------------------------"
     # echo "Installing Python ms-python.python extension for VSC..."
     # "$INSTALLDIR/$VSCHOME/bin/code" --install-extension ms-python.python
 }
@@ -947,30 +912,25 @@ vscode_startup_scripts() {
     echo "DEV_PATH_WIN -- $DEV_PATH_WIN"
     echo "DEV_PATH_LNX -- $DEV_PATH_LNX"
     echo ""
-    echo "PATH --- $PATH"
-    echo code.cmd:
-    cat "$INSTALLDIR/$VSCHOME/bin/code.cmd"
-    echo ===
-    echo code
-    cat "$INSTALLDIR/$VSCHOME/bin/code"
+    # echo "PATH --- $PATH"
+    # echo code.cmd:
+    # cat "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+    # echo ===
+    # echo code
+    # cat "$INSTALLDIR/$VSCHOME/bin/code"
 }
 
 toolchain_test() {
     # Checking toolchain availability through the 'PATH' variable
     echo "------------------------------------------------------------------------------"
     # working directiry  for path testing - ../VSCHOME/bin or ../GITHOME/cmd
-    echo "Current PWD"
-    pwd
     if [ -d  "$INSTALLDIR/$VSCHOME/bin" ]; then
-        pushd "$INSTALLDIR/$VSCHOME/bin" #"$@" > /dev/null
+        pushd "$INSTALLDIR/$VSCHOME/bin" "$@" > /dev/null
     else
-        pushd "$INSTALLDIR/$GITHOME/cmd" #"$@" > /dev/null
+        pushd "$INSTALLDIR/$GITHOME/cmd" "$@" > /dev/null
     fi
 
-    echo "new PWD"
-    pwd
-    JAVA_HOME="./../../$JDKHOME/$JDK"
-    echo -e "Current toolchain path: $DEV_PATH_LNX\n"
+    JAVA_HOME="$(dirname "$(dirname "$(realpath "$0")")")/$JDKHOME/$JDK"
     temp_path=$PATH
     PATH="$DEV_PATH_LNX"
 
@@ -982,7 +942,7 @@ toolchain_test() {
     echo "  Cecking installed conponents availability..."
     echo "------------------------------------------------------------------------------"
     echo "VSC test"
-    code --version
+    code.cmd --version
     echo ""
     echo "gcc test"
     gcc --version
@@ -1000,8 +960,7 @@ toolchain_test() {
     java --version
     echo ""
     echo "maven test"
-    echo "JAVA_HOME -- $JAVA_HOME"
-    mvn --version
+    mvn.cmd --version
     echo ""
     echo "git test"
     git --version
@@ -1013,20 +972,20 @@ toolchain_test() {
     read -s -p $'  press \e[32m[ENTER]\e[0m to continue'
 }
 
-# Making Uninstall.sh file - TBD
-make_uninstall_bat() {
-    touch $INSTALLDIR/uninstall.sh
-    echo "#!/bin/bash" >> $INSTALLDIR/uninstall.sh
-    echo "VSCHOME=$VSCHOME" >> $INSTALLDIR/uninstall.sh
-    echo "MINGWHOME=$MINGWHOME" >> $INSTALLDIR/uninstall.sh
-    echo "PYTHONHOME=$PYTHONHOME" >> $INSTALLDIR/uninstall.sh
-    echo "JDKHOME=$JDKHOME" >> "$INSTALLDIR/uninstall.sh"
-    echo "INSTALLDIR=$INSTALLDIR" >> $INSTALLDIR/uninstall.sh
-    cat uninstall._sh >> $INSTALLDIR/uninstall.sh
-    echo ""
-    echo "  Uninstall script complete!"
-    # read -s -p $'  press \e[32m[ENTER]\e[0m to continue'
-}
+# # Making Uninstall.sh file - TBD
+# make_uninstall_bat() {
+#     touch $INSTALLDIR/uninstall.sh
+#     echo "#!/bin/bash" >> $INSTALLDIR/uninstall.sh
+#     echo "VSCHOME=$VSCHOME" >> $INSTALLDIR/uninstall.sh
+#     echo "MINGWHOME=$MINGWHOME" >> $INSTALLDIR/uninstall.sh
+#     echo "PYTHONHOME=$PYTHONHOME" >> $INSTALLDIR/uninstall.sh
+#     echo "JDKHOME=$JDKHOME" >> "$INSTALLDIR/uninstall.sh"
+#     echo "INSTALLDIR=$INSTALLDIR" >> $INSTALLDIR/uninstall.sh
+#     cat uninstall._sh >> $INSTALLDIR/uninstall.sh
+#     echo ""
+#     echo "  Uninstall script complete!"
+#     # read -s -p $'  press \e[32m[ENTER]\e[0m to continue'
+# }
 
 
 # ========== Menus ===========
@@ -1064,8 +1023,6 @@ custom_menu() {
                 ;;
             d) 
                 option_dotnet
-                echo -e "  \e[32mInstallation finished\e[0m"
-                read -s -p $'  press \e[32m[ENTER]\e[0m to continue'
                 ;;
             
             q)
@@ -1082,14 +1039,7 @@ custom_menu() {
 main_menu() {    
     local choice023=""
     local invalid023msg=""
-    
-    #-#
-    pwd
-    cd $SRC_PATH
-    echo "PWD:"
-    pwd
-    #-#
-
+    cd $SRC_PATH # making working directory as source installation dir. 
     while :
     do
         # clear
@@ -1112,7 +1062,7 @@ main_menu() {
         echo -e "   '\e[32mq\e[0m' - quit installation"
         echo -e "  $invalid023msg"
         read -p "  Enter choice: " -n 1  choice023
-        invalid023msg="" # Refresh erroro message after each case option
+        invalid023msg="" # Refresh error message after each case option
 
         echo ""
 
@@ -1144,10 +1094,6 @@ main_menu() {
 }
 
 # ========== Main ===========
-#-#
-# check_var
-#-#
-
 main_menu
 read -s -p $'  press \e[32m[ENTER]\e[0m to continue'
 exit 0
