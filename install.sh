@@ -60,6 +60,7 @@ DEV_PATH_WIN=""         # collects data for PATH variable for executables while 
 DEV_PATH_LNX=""         # collects data for PATH variable for executables while installing in linux format
 ENVIRONMENT_VARS_WIN=""        # collects data for environment variables needed in windows format
 ENVIRONMENT_VARS_LNX=""        # collects data for environment variables needed in linux format
+BOOL_GIT_INSTALLED="n"
 
 # ========== Annatation ==========
 annatation() {
@@ -115,6 +116,59 @@ check_var() {
     read -s -p $'  press \e[32m[ENTER]\e[0m to continue'
 }
 
+# Add text into the file at selected line number
+add_sniplet() {
+    local sniplet=$1
+    echo sn=$sniplet
+    local src_file=$2
+    echo f1=$src_file
+    local out_file=$3
+    echo f2=$out_file
+    local position=$4
+    echo position=$position
+
+    if [ -z "$1" ]; then
+        echo "Empty arguments!"
+        echo "add_snipl inserts text into selected line number of the sourse file ond save result to output file "
+        echo "Usage: add_sniplet <text> <path/to/source> <path/to/output> <line number to inset text>"
+        return 1
+    fi
+
+    if [ -z "$position" ]; then
+        position="1"
+        echo position=$position
+
+    elif [[ ! $position == *[0-9] ]]; then
+        echo position $position not right!
+        return 1
+    fi
+
+    if [ ! -f "$src_file" ]; then
+        echo "bad sourse file $src_file"
+        return 1
+    fi
+
+    if [ -s "$out_file" ]; then
+        local choises
+        read -p "File $out_file exists, owerwrite it? y/n: " choise
+
+        case "$choise" in
+            y)
+            echo yes--
+            ;;
+            n)
+            echo no--
+            return 1
+            ;;
+            *)
+            echo "wrong choise"
+            return 1
+            ;;
+        esac
+        echo in if after case
+    fi
+    sed "${position}i\\$sniplet" "$src_file">"$out_file"
+}
 # Set installation location in INSTALLDIR global variable
 path_set() {
     local name=""
@@ -466,8 +520,8 @@ vsc_install() {
     # 7z do not use absolet path in nix style and need win style drive letter like c:
     # ${string:1:1} takes the second one letter 
     # ${string:2} takes the string from third letter to the end of the string
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/test/*.zip -o$VSCHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/*.zip -o$VSCHOME
+    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/test/*.zip -o$VSCHOME # for test
+    # $SRC_PATH/$SRC_7ZIP/7za x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/*.zip -o$VSCHOME
     popd "$@" > /dev/null
     #-old
     # mkdir -p "$INSTALLDIR/$VSCHOME/bin"
@@ -483,8 +537,22 @@ vsc_install() {
     DEV_PATH_LNX+="./../../$VSCHOME/bin:"
     material_icon_extension
     # Set up user settings
-    cat  "$SRC_VSC/_user_settings.json" >> "$INSTALLDIR/$VSCHOME/data/user-data/User/settings.json"
-    
+
+    if [[ $BOOL_GIT_INSTALLED == "y" ]]; then
+        # Calculate lines in settings.json
+        all=$(wc -l "$SRC_VSC/_user_settings.json")
+        line_number=${all%% *}
+        let "line_number+=1"
+        #add git-bash terminal setting to the end of the settings file
+        add_sniplet "    \"terminal.integrated.profiles.windows\":\ {\"Git\ Bash\":\ {\"path\":\
+\ \"\${env:USERPROFILE}\\\\\\\\DevTools\\\\\\\\PortableGit\\\\\\\\bin\\\\\\\\bash.exe\"},\ },\n\
+    \"terminal.integrated.defaultProfile.windows\":\"Git\ Bash\"" \
+        "$SRC_VSC/_user_settings.json" \
+        "$INSTALLDIR/$VSCHOME/data/user-data/User/settings.json" \
+        "$line_number"
+    else
+        cat  "$SRC_VSC/_user_settings.json" >> "$INSTALLDIR/$VSCHOME/data/user-data/User/settings.json"
+    fi
     # .Net version check
     echo "  DotNET Framework version check:"
     echo "------------------------------------------------------------------------------"
@@ -652,12 +720,13 @@ git_install() {
         
         #-#
         # 7z do not use absolet path in nix style and need win style drive letter like c:
+        # 7z do not use absolet path in nix style and need win style drive letter like c:
+        
+        # 7z do not use absolet path in nix style and need win style drive letter like c:    
         
         pushd "$INSTALLDIR" "$@" > /dev/null
-check_var
-
-        # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/test/*.zip -o$GITHOME # for test
-        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/*.exe -o$GITHOME
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/test/*.zip -o$GITHOME # for test
+        # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/*.exe -o$GITHOME
         echo postinstall git...
         # post-install.bat is generating after installation and self deleting after exeqution
         # pwd - INSTALLDIR - so call it reletive 
@@ -846,6 +915,7 @@ check_var
     echo "set githome=\\$GITHOME" >> $HOME/gt.bat
     cat "$SRC_GIT/gt._bat" >> $HOME/gt.bat
     chmod 777 $HOME/gt.bat
+    BOOL_GIT_INSTALLED="y"
 }
 
 # ========== Extensions for VSC ===========
@@ -942,7 +1012,7 @@ toolchain_test() {
     echo "  Cecking installed conponents availability..."
     echo "------------------------------------------------------------------------------"
     echo "VSC test"
-    code.cmd --version
+    code --version
     echo ""
     echo "gcc test"
     gcc --version
