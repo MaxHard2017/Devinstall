@@ -1,15 +1,15 @@
 #!/bin/bash
 # ===== Global =====
 # Destination folders for installation
-# app home folsers
 # INSTALLDIR better be on the same disc as HOME
 # making absolet win like path for 7z (as it could only work with reletive path and can not underctend /c/...)
 # ABS_INSTALL=${INSTALLDIR:1:1}:${INSTALLDIR:2}
+TEST_MODE="n" # Enables test mode in which dummy source archive files are used
 HOME="$HOME/home"   # /path/to/installation/directory/ for all programms
 INSTALLDIR="$HOME/devtools"   # /path/to/installation/directory/ for all programms
 # for test
-HOME="/f/testhome" 
-INSTALLDIR="/f/testdevinstall"   # /path/to/installation/directory/ for all programms
+HOME="/d/test/testhome" 
+INSTALLDIR="/d/test/testdevinstall"   # /path/to/installation/directory/ for all programms
 
 VSCHOME="VSC"
 MINGWHOME="MinGWx86_64-8.1.0"
@@ -118,19 +118,20 @@ check_var() {
 
 # Add text into the file at selected line number
 add_sniplet() {
-    local sniplet=$1
-    echo sn=$sniplet
-    local src_file=$2
-    echo f1=$src_file
-    local out_file=$3
-    echo f2=$out_file
-    local position=$4
+
+    local position=$1
     echo position=$position
+    local sniplet=$2
+    echo sn=$sniplet
+    local src_file=$3
+    echo src=$src_file
+    local out_file=$4
+    echo out=$out_file
 
     if [ -z "$1" ]; then
         echo "Empty arguments!"
         echo "add_snipl inserts text into selected line number of the sourse file ond save result to output file "
-        echo "Usage: add_sniplet <text> <path/to/source> <path/to/output> <line number to inset text>"
+        echo "Usage: add_sniplet <line number to inset text> <text> <path/to/source> (optional <path/to/output>)"
         return 1
     fi
 
@@ -148,27 +149,15 @@ add_sniplet() {
         return 1
     fi
 
-    if [ -s "$out_file" ]; then
-        local choises
-        read -p "File $out_file exists, owerwrite it? y/n: " choise
-
-        case "$choise" in
-            y)
-            echo yes--
-            ;;
-            n)
-            echo no--
-            return 1
-            ;;
-            *)
-            echo "wrong choise"
-            return 1
-            ;;
-        esac
-        echo in if after case
+    if [ -z "$out_file" ]; then
+        cat $src_file > snipl.tmp
+        sed "${position}i\\$sniplet" "snipl.tmp">"$src_file"
+        rm snipl.tmp
+    else
+        sed "${position}i\\$sniplet" "$src_file">"$out_file"
     fi
-    sed "${position}i\\$sniplet" "$src_file">"$out_file"
 }
+
 # Set installation location in INSTALLDIR global variable
 path_set() {
     local name=""
@@ -196,9 +185,8 @@ path_set() {
         fi
     done
     # making absolet path for 7z (as it could only work with reletive path and can not underctend /c/...)
-    ABS_INSTALL=${INSTALLDIR:1:1}:${INSTALLDIR:2}
+    # ABS_INSTALL=${INSTALLDIR:1:1}:${INSTALLDIR:2}
 }
-
 # ========== Instalation options ==========
 
 option_full() {
@@ -520,8 +508,11 @@ vsc_install() {
     # 7z do not use absolet path in nix style and need win style drive letter like c:
     # ${string:1:1} takes the second one letter 
     # ${string:2} takes the string from third letter to the end of the string
-    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/test/*.zip -o$VSCHOME # for test
-    # $SRC_PATH/$SRC_7ZIP/7za x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/*.zip -o$VSCHOME
+    if [ $TEST_MODE == "y" ]; then
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/test/*.zip -o$VSCHOME # for test
+    else
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_VSC/*.zip -o$VSCHOME
+    fi
     popd "$@" > /dev/null
     #-old
     # mkdir -p "$INSTALLDIR/$VSCHOME/bin"
@@ -534,7 +525,9 @@ vsc_install() {
     #-old
 
     DEV_PATH_WIN+="%~dp0..\..\\$VSCHOME\bin;"
-    DEV_PATH_LNX+="./../../$VSCHOME/bin:"
+    # DEV_PATH_LNX+='"$(dirname "$(realpath "$0")")"'"/../$VSCHOME/bin:"
+    #DEV_PATH_LNX+="\$VSCODE_PATH/../$VSCHOME/bin:"
+    DEV_PATH_LNX+="\$INSTALLDIR/$VSCHOME/bin:"
     material_icon_extension
     # Set up user settings
 
@@ -543,13 +536,13 @@ vsc_install() {
         all=$(wc -l "$SRC_VSC/_user_settings.json")
         line_number=${all%% *}
         let "line_number+=1"
-        #add git-bash terminal setting to the end of the settings file
-        add_sniplet "    \"terminal.integrated.profiles.windows\":\ {\"Git\ Bash\":\ {\"path\":\
+        #add git-bash terminal setting to the end of the VS Code settings file
+        add_sniplet "$line_number" \
+        "    \"terminal.integrated.profiles.windows\":\ {\"Git\ Bash\":\ {\"path\":\
 \ \"\${env:USERPROFILE}\\\\\\\\DevTools\\\\\\\\PortableGit\\\\\\\\bin\\\\\\\\bash.exe\"},\ },\n\
     \"terminal.integrated.defaultProfile.windows\":\"Git\ Bash\"" \
         "$SRC_VSC/_user_settings.json" \
-        "$INSTALLDIR/$VSCHOME/data/user-data/User/settings.json" \
-        "$line_number"
+        "$INSTALLDIR/$VSCHOME/data/user-data/User/settings.json"
     else
         cat  "$SRC_VSC/_user_settings.json" >> "$INSTALLDIR/$VSCHOME/data/user-data/User/settings.json"
     fi
@@ -585,10 +578,11 @@ dotnet_check_install() {
                 echo ""
                 echo "------------------------------------------------------------------------------"
                 echo "  .Net installing...."
-                #-#
-                # "$SRC_DOTNET/ndp48-x86-x64-allos-enu.exe"
-                $SRC_DOTNET/test/dotnet_test
-                #-#
+                if [ $TEST_MODE == "y" ]; then
+                    $SRC_DOTNET/test/dotnet_test
+                else
+                    "$SRC_DOTNET/ndp48-x86-x64-allos-enu.exe"
+                fi
                 echo ""
                 echo -e "  In case of \e[33m\"Permission denied\"\e[0m error"
                 echo -e "  run \e[32minstall.ssh\e[0m intsallation sctipt with admin rights."
@@ -616,16 +610,20 @@ mingw_install() {
 
     pushd "$INSTALLDIR" "$@" > /dev/null
     # 7z do not use absolet path in nix style and need win style drive letter like c:
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_C/test/*.zip -o$MINGWHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_C/*.7z -o$MINGWHOME
+    if [ $TEST_MODE == "y" ]; then
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_C/test/*.zip -o$MINGWHOME # for test
+    else
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_C/*.7z -o$MINGWHOME
+    fi
     popd "$@" > /dev/null
+
     #-old
     # mkdir -p "$INSTALLDIR/$MINGWHOME/mingw64/bin"
     # echo "echo MinGW - ok " > "$INSTALLDIR/$MINGWHOME/mingw64/bin/gcc"
     #-old
 
     DEV_PATH_WIN+="%~dp0..\..\\$MINGWHOME\mingw64\bin;"
-    DEV_PATH_LNX+="./../../$MINGWHOME/mingw64/bin:"
+    DEV_PATH_LNX+="\$INSTALLDIR/$MINGWHOME/mingw64/bin:"
     c_extension
 }
 
@@ -640,18 +638,19 @@ python_install() {
     #-#
     pushd "$INSTALLDIR" "$@" > /dev/null
     # 7z do not use absolet path in nix style and need win style drive letter like c:
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_PYTHON/test/*.zip -o$PYTHONHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_PYTHON/*.zip -o$PYTHONHOME
+    if [ $TEST_MODE == "y" ]; then
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_PYTHON/test/*.zip -o$PYTHONHOME # for test
+    else
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_PYTHON/*.zip -o$PYTHONHOME
+    fi
     popd "$@" > /dev/null
-    # echo "echo python - ok " > "$INSTALLDIR/$PYTHONHOME/python123"
-    #-#
-
+    
     echo ""
     echo "Installing documentation to $INSTALLDIR/$PYTHONHOME/docs..."
     mkdir -p $INSTALLDIR/$PYTHONHOME/docs
     cp $SRC_DOCS/Python/* $INSTALLDIR/$PYTHONHOME/docs
     DEV_PATH_WIN+="%~dp0..\..\\$PYTHONHOME;"
-    DEV_PATH_LNX+="./../../$PYTHONHOME:"
+    DEV_PATH_LNX+="\$INSTALLDIR/$PYTHONHOME:"
     py_extension
 }
 
@@ -663,22 +662,26 @@ jdk_install() {
     echo "------------------------------------------------------------------------------"
     
     mkdir -p "$INSTALLDIR/$JDKHOME"
-    #-#
     pushd "$INSTALLDIR" "$@" > /dev/null
     # 7z do not use absolet path in nix style and need win style drive letter like c:
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_JDK/test/*.zip -o$JDKHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_JDK/*.zip -o$JDKHOME
+     
+    if [ $TEST_MODE == "y" ]; then
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_JDK/test/*.zip -o$JDKHOME # for test
+    else
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_JDK/*.zip -o$JDKHOME
+    fi
     popd "$@" > /dev/null
-    #-#
 
     ENVIRONMENT_VARS_WIN+="set JAVA_HOME=%~dp0..\..\\$JDKHOME\\$JDK"
     ENVIRONMENT_VARS_WIN+=$'\n'
 
-    ENVIRONMENT_VARS_LNX+="JAVA_HOME=./../../$JDKHOME/$JDK"
+    #-# remove????
+    ENVIRONMENT_VARS_LNX+="JAVA_HOME=\$INSTALLDIR/$JDKHOME/$JDK"
     ENVIRONMENT_VARS_LNX+=$'\n'
+    #-#
 
     DEV_PATH_WIN+="%JAVA_HOME%\bin;"
-    DEV_PATH_LNX+="./../../$JDKHOME/$JDK/bin:"
+    DEV_PATH_LNX+="\$INSTALLDIR/$JDKHOME/$JDK/bin:"
 }
 
 # Appache Maven installation
@@ -692,13 +695,19 @@ maven_install() {
     #-#
     pushd "$INSTALLDIR" "$@" > /dev/null
     # 7z do not use absolet path in nix style and need win style drive letter like c:
-    # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_MAVEN/test/*.zip -o$MAVENHOME # for test
-    $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_MAVEN/*.zip -o$MAVENHOME
+    # 
+
+    if [ $TEST_MODE == "y" ]; then
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_MAVEN/test/*.zip -o$MAVENHOME # for test
+    else
+        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_MAVEN/*.zip -o$MAVENHOME
+    fi
+
     popd "$@" > /dev/null
     #-#
 
     DEV_PATH_WIN+="%~dp0..\..\\$MAVENHOME\\$MAVEN\bin;"
-    DEV_PATH_LNX+="./../../$MAVENHOME/$MAVEN/bin:"
+    DEV_PATH_LNX+="\$INSTALLDIR/$MAVENHOME/$MAVEN/bin:"
 }
 
 # git installation
@@ -725,10 +734,15 @@ git_install() {
         # 7z do not use absolet path in nix style and need win style drive letter like c:    
         
         pushd "$INSTALLDIR" "$@" > /dev/null
-        $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/test/*.zip -o$GITHOME # for test
-        # $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/*.exe -o$GITHOME
+
+        if [ $TEST_MODE == "y" ]; then
+            $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/test/*.zip -o$GITHOME # for test
+        else
+            $SRC_PATH/$SRC_7ZIP/7za.exe x ${SRC_PATH:1:1}:${SRC_PATH:2}/$SRC_GIT/*.exe -o$GITHOME
+        fi
         echo postinstall git...
         # post-install.bat is generating after installation and self deleting after exeqution
+        # post-install.bat requires its directory to be active (wirking)
         # pwd - INSTALLDIR - so call it reletive 
         "$GITHOME"/post-install.bat
         popd "$@" > /dev/null
@@ -802,7 +816,8 @@ git_install() {
     #ENVIRONMENT_VARS_LNX+=$'\n'
 
     DEV_PATH_WIN+="%~dp0..\..\\$GITHOME\cmd;"
-    DEV_PATH_LNX+="./../../$GITHOME/cmd:"
+    # VSCODE_PATH - internal variable of the bin\code sh file in VS Code installaton
+    DEV_PATH_LNX+="\$INSTALLDIR/$GITHOME/cmd:"
     
     echo "  Configuring git..."
     # git config initializaition
@@ -886,6 +901,9 @@ git_install() {
                 ENVIRONMENT_VARS_WIN+=$HOME_WIN
                 ENVIRONMENT_VARS_WIN+="\.ssh\git_id_ed25519"
                 ENVIRONMENT_VARS_WIN+=$'\n'
+                ENVIRONMENT_VARS_WIN+="ssh-add -l"
+                ENVIRONMENT_VARS_WIN+=$'\n'
+
                 echo ""
                 echo "  SSH setup complete"
                 echo "  Add the SSH public key to your account on GitHub. For more information,"
@@ -950,34 +968,108 @@ py_extension() {
 # Setting temporary PATH variable in  $INSTALLDIR$VSCHOME/bin/code.cmd | code
 vscode_startup_scripts() {
     echo 
+    # DevDrive letter
+    local choise11=""
+        while :
+        do
+            echo -e "  If you use \e[32mDevDrive\e[0m we could change environment vars for pointing nuget, yarn, pip, maven, gradle to it"
+            read -p $'  Enter DevDrive \e[32mletter\e[0m , or \e[32mn\e[0m - for cancel operation: ' -n 1  choise11
+            case "$choise11" in
+                [a-zA-Z])
+                    echo "  Temporary environment variables for nuget, yarn, pip, maven, gradle"
+                    echo "  will be set to DevDrive $choise11:"
+                    break
+                    ;;
+                n)
+                    echo " No DevDrive settings..."
+                    break
+                    ;;                      
+                *)
+                    echo -e "\n\e[33m  Invalid choice.\e[0m Please try again."
+                    ;;
+            esac
+        done
+
+    # = set path and variables in cmd script for VSCode startup
     if [ -f "$INSTALLDIR/$VSCHOME/bin/code.cmd" ]; then
         cp "$INSTALLDIR/$VSCHOME/bin/code.cmd" "$INSTALLDIR/$VSCHOME/bin/code.old_cmd"
     fi
     
-    if [ -f "$INSTALLDIR/$VSCHOME/bin/code" ]; then
-        cp "$INSTALLDIR/$VSCHOME/bin/code" "$INSTALLDIR/$VSCHOME/bin/code_old"
-    fi
-
     echo '@ECHO OFF' > "$INSTALLDIR/$VSCHOME/bin/code.cmd"
     echo "rem For SSH check if components installed in Windows\System32\OpenSSH" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
     # INSTALLDIR:~2 - INSTALLDIR variable string without 2 first letters, i.e. without drive letters (C: - for instance)
     # It gives us the opportunity to set the correct drive letter in PATH variable, even if we will use installation on a USB drive with an assigned random drive letter
     # WRITE_PATH uses extra "%" for correct writing PATH to code.cmd - %~d0% but not its value (c: - for instance)
     # %~d0 shows the current drive letter where <code.cmd> is evoked
-
-    # set path in cmd script for VSCode startup
     echo "$ENVIRONMENT_VARS_WIN" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
     echo "set PATH="$DEV_PATH_WIN"%PATH%" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
     echo "@ECHO Current PATH: = %PATH%" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+    if [[ ! $choise11 == "n" ]]; then
+        echo "@REM setting  dev  drive storage" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+        echo "set NUGET_PACKAGES=D:\packages\nuget" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+        echo "set npm_config_cache=D:\packages\npm" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+        echo "set YARN_CACHE_FOLDER=D:\packages\npm" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+        echo "set PIP_CACHE_DIR=D:\packages\pip" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+        echo "set MAVEN_OPTS=\"-Dmaven.repo.local=D:\packages\maven %MAVEN_OPTS%\"" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+        echo "set GRADLE_USER_HOME=D:\packages\gradle" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
+    fi
     cat "$INSTALLDIR/$VSCHOME/bin/code.old_cmd" >> "$INSTALLDIR/$VSCHOME/bin/code.cmd"
     
-    # Set path in sh script for VSCode startup
+    # = Set path in sh script for VSCode startup
     # Path variable temporary changed adding search paths to all toolchain apps  git, maven, and etc.
     # code script exports PATH varisble to its child process - Code.exe in order for tollchain apps 
     # be temporary availsble while Code.exe is runing
-    
-    sed "2i\export PATH=$DEV_PATH_LNX\$PATH" "$INSTALLDIR/$VSCHOME/bin/code_old">"$INSTALLDIR/$VSCHOME/bin/code"
-    
+    if [ -f "$INSTALLDIR/$VSCHOME/bin/code" ]; then
+        cp "$INSTALLDIR/$VSCHOME/bin/code" "$INSTALLDIR/$VSCHOME/bin/code_old"
+    fi
+
+    # # sed "2i\export PATH=$DEV_PATH_LNX\$PATH" "$INSTALLDIR/$VSCHOME/bin/code_old">"$INSTALLDIR/$VSCHOME/bin/code"
+    # # DevDrive paths
+    # if [ !$choise11 == "n"]; then
+        
+    #     local all=$(wc -l "./1.txt")
+    #     #take the first word in string
+    #     local last_line=${all%% *}
+    #     let "last_line+=1"
+    #     # print all variables in the end fo the code sh
+    #     # becouse VSCODE_PATH var that we will use is initialised in the midle of code file
+
+    #     add_sniplet "PATH=$DEV_PATH_LNX\$PATH\n\
+    #     export\ NUGET_PACKAGES=/mnt/d/packages/nuget\n\
+    #     export\ npm_config_cache=/mnt/d/packages/npm\n\
+    #     export\ YARN_CACHE_FOLDER=/mnt/d/packages/npm\n\
+    #     export\ PIP_CACHE_DIR=/mnt/d/packages/pip\n\
+    #     export\ MAVEN_OPTS=\"-Dmaven.repo.local=/mnt/d/packages/maven\ %MAVEN_OPTS%\"\n\
+    #     export GRADLE_USER_HOME=/mnt/d/packages/gradle" \
+    #     "$INSTALLDIR/$VSCHOME/bin/code_old" \
+    #     "$INSTALLDIR/$VSCHOME/bin/code" \
+    #     $last_line
+    # fi
+
+    echo "#!/usr/bin/env sh" > "$INSTALLDIR/$VSCHOME/bin/code"
+    # define INSTALLDIR through the code file (taking in account its ramdon location as it is portable installation)
+    echo "INSTALLDIR=\"\$(dirname \"\$(dirname \"\$(dirname \"\$(realpath \"\$0\")\")\")\")\"" >> "$INSTALLDIR/$VSCHOME/bin/code"
+    # in installation file DEV_PATH_LNX  contain current INSTALLDIR var,which will be overriden in code sh file 
+    echo "export PATH=$DEV_PATH_LNX\$PATH" >> "$INSTALLDIR/$VSCHOME/bin/code"
+    # DevDrive paths
+    if [[ ! $choise11 == "n" ]]; then
+        echo "export NUGET_PACKAGES=\"/mnt/$choise11/packages/nuget\"" >> "$INSTALLDIR/$VSCHOME/bin/code"
+        echo "export npm_config_cache=\"/mnt/$choise11/packages/npm\"" >> "$INSTALLDIR/$VSCHOME/bin/code"
+        echo "export YARN_CACHE_FOLDER=\"/mnt/$choise11/packages/npm\"" >> "$INSTALLDIR/$VSCHOME/bin/code"
+        echo "export PIP_CACHE_DIR=\"/mnt/$choise11/packages/pip\"" >> "$INSTALLDIR/$VSCHOME/bin/code"
+        echo "export MAVEN_OPTS=\"-Dmaven.repo.local=/mnt/$choise11/packages/maven %MAVEN_OPTS%\"" >> "$INSTALLDIR/$VSCHOME/bin/code"
+        echo "export GRADLE_USER_HOME=\"/mnt/$choise11/packages/gradle\"" >> "$INSTALLDIR/$VSCHOME/bin/code"
+        
+        # Show for user info
+        echo "NUGET_PACKAGES=\"/mnt/$choise11/packages/nuget\"" 
+        echo "npm_config_cache=\"/mnt/$choise11/packages/npm\"" 
+        echo "YARN_CACHE_FOLDER=\"/mnt/$choise11/packages/npm\"" 
+        echo "PIP_CACHE_DIR=\"/mnt/$choise11/packages/pip\"" 
+        echo "MAVEN_OPTS=\"-Dmaven.repo.local=/mnt/$choise11/packages/maven %MAVEN_OPTS%\"" 
+        echo "GRADLE_USER_HOME=\"/mnt/$choise11/packages/gradle\"" 
+    fi
+    tail -n +3 "$INSTALLDIR/$VSCHOME/bin/code_old" >> "$INSTALLDIR/$VSCHOME/bin/code"
+
     #for control
     echo "DEV_PATH_WIN -- $DEV_PATH_WIN"
     echo "DEV_PATH_LNX -- $DEV_PATH_LNX"
@@ -995,21 +1087,31 @@ toolchain_test() {
     echo "------------------------------------------------------------------------------"
     # working directiry  for path testing - ../VSCHOME/bin or ../GITHOME/cmd
     if [ -d  "$INSTALLDIR/$VSCHOME/bin" ]; then
-        pushd "$INSTALLDIR/$VSCHOME/bin" "$@" > /dev/null
+        pushd "$INSTALLDIR/$VSCHOME/bin" #"$@" > /dev/null
     else
-        pushd "$INSTALLDIR/$GITHOME/cmd" "$@" > /dev/null
+        pushd "$INSTALLDIR/$GITHOME/cmd" #"$@" > /dev/null
     fi
+    echo JDKHOME=$JDKHOME
+    echo JDK=$JDK
 
-    JAVA_HOME="$(dirname "$(dirname "$(realpath "$0")")")/$JDKHOME/$JDK"
+    echo pwd=$(pwd)
+    echo test - "$(dirname "$(dirname "$(realpath "$0")")")"
+    VSCODE_PATH="$(dirname "$(dirname "$(realpath "$0")")")"
+    echo VSCODE_PATH=$VSCODE_PATH
+    echo script = "$(realpath "$0")"
+
+    JAVA_HOME="$INSTALLDIR/$JDKHOME/$JDK"
     temp_path=$PATH
-    PATH="$DEV_PATH_LNX"
+    # INSTALLDIR collected in DEV_PATH_LNX as s string '$INSTALLDIR'
+    # so it should be transferred to real path, stored in INSTALLDIR
+    PATH="${DEV_PATH_LNX//'$INSTALLDIR'/$INSTALLDIR}"
 
     #for check
-    echo "checking PATH = $PATH"
+    echo checking PATH = "$PATH"
     echo "JAVA_HOME = $JAVA_HOME"
     echo ""
     echo ""
-    echo "  Cecking installed conponents availability..."
+    echo "  Checking installed conponents availability..."
     echo "------------------------------------------------------------------------------"
     echo "VSC test"
     code --version
