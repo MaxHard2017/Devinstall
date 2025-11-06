@@ -1,2 +1,0 @@
-YAML Language support  with built-in Kubernetes syntax support.
-https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
